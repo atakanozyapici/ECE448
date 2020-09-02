@@ -18,10 +18,7 @@ files and classes when code is run, so be careful to not modify anything else.
 # maze is a Maze object based on the maze from the file specified by input filename
 # searchMethod is the search method specified by --method flag (bfs,dfs,astar,astar_multi,fast)
 
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 
 def search(maze, searchMethod):
     return {
@@ -80,7 +77,43 @@ def astar(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
-    return []
+    done = {}
+    frontier_q = queue.PriorityQueue()
+
+    start = maze.getStart()
+    frontier_q.put((0, start))
+    done[start] = (0,start)
+    prev = start
+
+    while(frontier_q.empty() == False):
+        current = frontier_q.get()
+        neighbors = maze.getNeighbors(current[1][0], current[1][1])
+        for i in neighbors:
+            b_flag = 0
+            if(maze.isObjective(i[0], i[1]) == True):
+                done[i] = current
+                ret_cur = i
+                b_flag = 1
+                break
+            if(i not in done):
+                prev = done[current[1]]
+                if(prev != start):
+                    prev_distance = prev[0] - abs((maze.getObjectives())[0][0]-prev[1][0]) - abs((maze.getObjectives())[0][1]-prev[1][1]) + 1
+                else:
+                    prev_distance = 1
+                f_distance = abs((maze.getObjectives())[0][0]-current[1][0]) + abs((maze.getObjectives())[0][1]-current[1][1]) + prev_distance
+                frontier_q.put((f_distance, i))
+                done[i] = current
+        if(b_flag):
+            break
+    if(not b_flag):
+        ret_cur = start
+    ret = []
+    while (ret_cur != start):
+        ret.insert(0,ret_cur)
+        ret_cur = done[ret_cur][1]
+    ret.insert(0,start)
+    return ret
 
 def astar_corner(maze):
     """
