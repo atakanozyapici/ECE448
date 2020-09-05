@@ -81,13 +81,12 @@ def astar(maze):
     frontier_q = queue.PriorityQueue()
 
     start = maze.getStart()
-    frontier_q.put((0, start))
-    done[start] = (0,start)
-    prev = start
+    frontier_q.put((0,0, start))
+    done[start] = (0,0,start)
 
     while(frontier_q.empty() == False):
         current = frontier_q.get()
-        neighbors = maze.getNeighbors(current[1][0], current[1][1])
+        neighbors = maze.getNeighbors(current[2][0], current[2][1])
         for i in neighbors:
             b_flag = 0
             if(maze.isObjective(i[0], i[1]) == True):
@@ -96,13 +95,8 @@ def astar(maze):
                 b_flag = 1
                 break
             if(i not in done):
-                prev = done[current[1]]
-                if(prev != start):
-                    prev_distance = prev[0] - abs((maze.getObjectives())[0][0]-prev[1][0]) - abs((maze.getObjectives())[0][1]-prev[1][1]) + 1
-                else:
-                    prev_distance = 1
-                f_distance = abs((maze.getObjectives())[0][0]-current[1][0]) + abs((maze.getObjectives())[0][1]-current[1][1]) + prev_distance
-                frontier_q.put((f_distance, i))
+                f_distance = abs((maze.getObjectives())[0][0]-i[0]) + abs((maze.getObjectives())[0][1]-i[1]) + current[1] + 1
+                frontier_q.put((f_distance, current[1]+1, i))
                 done[i] = current
         if(b_flag):
             break
@@ -111,7 +105,7 @@ def astar(maze):
     ret = []
     while (ret_cur != start):
         ret.insert(0,ret_cur)
-        ret_cur = done[ret_cur][1]
+        ret_cur = done[ret_cur][2]
     ret.insert(0,start)
     return ret
 
@@ -124,7 +118,64 @@ def astar_corner(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
         """
     # TODO: Write your code here
-    return []
+    done = {}
+    frontier_q = queue.PriorityQueue()
+
+    edges = maze.getObjectives()
+    start = maze.getStart()
+    frontier_q.put((0,0, (start, (1,1,1,1))))
+    done[(start,(1,1,1,1))] = (0,0, (start, (1,1,1,1)))
+
+    while(frontier_q.empty() == False):
+        current = frontier_q.get()
+        neighbors = maze.getNeighbors(current[2][0][0], current[2][0][1])
+        for i in neighbors:
+            b_flag = 0
+            tuples = list(current[2][1])
+            if(i in edges):
+                # print(i)
+                tuples[edges.index(i)] = 0
+                if(tuples[0] == 0 and tuples[1] == 0 and tuples[2] == 0 and tuples[3] == 0):
+                    done[(i, (0,0,0,0))] = current
+                    ret_cur = (i, (0,0,0,0))
+                    b_flag = 1
+                    break
+
+            if((i,tuple(tuples)) not in done):
+                heuristic = 0
+                temp = []
+                for ind in range(0,4):
+                    if tuples[ind] == 1:
+                        temp.append(edges[ind])
+
+                position = i
+                while(temp):
+                    dist = -1
+                    for e in temp:
+                        d = abs(e[0]-position[0]) + abs(e[1]-position[1])
+                        if(d < dist or dist == -1):
+                            dist = d
+                            rem = e
+                            position = e
+                    heuristic += dist
+                    temp.remove(rem)
+
+                f_distance = heuristic + current[1] + 1
+                frontier_q.put((f_distance, current[1] + 1, (i, tuple(tuples))))
+
+                done[(i, tuple(tuples))] = current
+        if(b_flag):
+            break
+    if(not b_flag):
+        ret_cur = start
+
+    ret = []
+    while(ret_cur != (start,(1,1,1,1))):
+        ret.insert(0,ret_cur[0])
+        ret_cur = done[ret_cur][2]
+
+    ret.insert(0,start)
+    return ret
 
 def astar_multi(maze):
     """
