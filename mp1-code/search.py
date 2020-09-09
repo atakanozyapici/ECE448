@@ -118,56 +118,72 @@ def astar_corner(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
         """
     # TODO: Write your code here
+    def f_heuristic(coord, remaining, edge_list):
+        heuristic = 0
+        temp =[]
+        for ind in range(0,4):
+            if remaining[ind] == 1:
+                temp.append(edge_list[ind])
+
+        position = coord
+        while(temp):
+            dist = 0
+            for e in temp:
+                d = abs(e[0]-position[0]) + abs(e[1]-position[1])
+                if(d <= dist or dist == 0):
+                    dist = d
+                    rem = e
+                    position = e
+            heuristic += dist
+            temp.remove(rem)
+        return heuristic
+
     done = {}
     frontier_q = queue.PriorityQueue()
 
     edges = maze.getObjectives()
     start = maze.getStart()
+    #put the start node into the queue and set all targets to not visited
     frontier_q.put((0,0, (start, (1,1,1,1))))
-    done[(start,(1,1,1,1))] = (0,0, (start, (1,1,1,1)))
+    #initialize prev state of start as start
+    h = f_heuristic(start, (1,1,1,1), edges)
+    done[(start,(1,1,1,1))] = (h,0, (start, (1,1,1,1)))
 
     while(frontier_q.empty() == False):
         current = frontier_q.get()
+        print(current)
+        b_flag = 0
+        tuples = list(current[2][1])
+        if(tuples[0] == 0 and tuples[1] == 0 and tuples[2] == 0 and tuples[3] == 0):
+            ret_cur = (current[2])
+            b_flag = 1
+            break
+
         neighbors = maze.getNeighbors(current[2][0][0], current[2][0][1])
         for i in neighbors:
-            b_flag = 0
-            tuples = list(current[2][1])
+            #if the neighbor is a target mark that target as visited before pushing the flags to the queue
+            cur_tuples = tuples.copy()
             if(i in edges):
                 # print(i)
-                tuples[edges.index(i)] = 0
-                if(tuples[0] == 0 and tuples[1] == 0 and tuples[2] == 0 and tuples[3] == 0):
-                    done[(i, (0,0,0,0))] = current
-                    ret_cur = (i, (0,0,0,0))
-                    b_flag = 1
-                    break
+                if cur_tuples[edges.index(i)]==0:
+                    print('Found edge again')
+                cur_tuples[edges.index(i)] = 0
+                print('cur_tuples')
+                print(cur_tuples)
 
-            if((i,tuple(tuples)) not in done):
-                heuristic = 0
-                temp = []
-                for ind in range(0,4):
-                    if tuples[ind] == 1:
-                        temp.append(edges[ind])
+            #check if i(neighbor) was already visited with the current flags
+            if((i,tuple(cur_tuples)) not in done):
 
-                position = i
-                while(temp):
-                    dist = -1
-                    for e in temp:
-                        d = abs(e[0]-position[0]) + abs(e[1]-position[1])
-                        if(d < dist or dist == -1):
-                            dist = d
-                            rem = e
-                            position = e
-                    heuristic += dist
-                    temp.remove(rem)
+                h = f_heuristic(i, cur_tuples, edges)
+                #set the f and g values and push the reamining states as well as the locations of the point
+                f_distance = h + current[1] + 1
+                frontier_q.put((f_distance, current[1] + 1, (i, tuple(cur_tuples))))
+                #push the prev node into the done table
+                done[(i, tuple(cur_tuples))] = current
 
-                f_distance = heuristic + current[1] + 1
-                frontier_q.put((f_distance, current[1] + 1, (i, tuple(tuples))))
 
-                done[(i, tuple(tuples))] = current
-        if(b_flag):
-            break
     if(not b_flag):
-        ret_cur = start
+        ret_cur = (start,(1,1,1,1))
 
     ret = []
     while(ret_cur != (start,(1,1,1,1))):
@@ -178,6 +194,34 @@ def astar_corner(maze):
     return ret
 
 def astar_multi(maze):
+    def astar_helper(start, goal):
+        done = {}
+        frontier_q = queue.PriorityQueue()
+
+        frontier_q.put((0,0, start))
+        done[start] = (0,0,start)
+
+        while(frontier_q.empty() == False):
+            current = frontier_q.get()
+            neighbors = maze.getNeighbors(current[2][0], current[2][1])
+            for i in neighbors:
+                b_flag = 0
+                if(i == goal):
+                    done[i] = current
+                    ret_cur = current[1] +1
+                    b_flag = 1
+                    break
+                if(i not in done):
+                    f_distance = abs(goal[0]-i[0]) + abs(goal[1]-i[1]) + current[1] + 1
+                    frontier_q.put((f_distance, current[1]+1, i))
+                    done[i] = current
+            if(b_flag):
+                break
+        if(not b_flag):
+            ret_cur = 0
+
+        return ret_cur
+
     """
     Runs A star for part 3 of the assignment in the case where there are
     multiple objectives.
