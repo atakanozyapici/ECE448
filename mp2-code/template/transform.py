@@ -41,23 +41,43 @@ def transformToMaze(arm, goals, obstacles, window, granularity):
 
     alpha_limit = limit[0]
     beta_limit = limit[1]
-    width = int(alpha_limit[1] - alpha_limit[0]) / granularity + 1
-    height = int(beta_limit[1] - beta_limit[0]) / granularity + 1
-    maze = [width][height]
+    width = int((alpha_limit[1] - alpha_limit[0]) / granularity + 1)
+    height = int((beta_limit[1] - beta_limit[0]) / granularity + 1)
+    maze = [SPACE_CHAR*width]*height
     for a in range(0, width):
-        real_a = idxToAngle(a,alpha_limit[0], granularity)
-        arm.setArmAngle(real_a, 0)
+        real_a = idxToAngle([a],[alpha_limit[0]], granularity)[0]
+        arm.setArmAngle((real_a, 0))
         first_arm = arm.getArmPosDist()[0]
-        if(isArmWithinWindow((first_arm[0],first_arm[1]))):
-            maze[a][:] = WALL_CHAR
-            continue
-        elif(doesArmTouchObjects(first_arm, obstacles)):
-            maze[a][:] = WALL_CHAR
-            continue
-        elif(doesArmTouchObjects(first_arm, goals, isGoal=True)):
-            maze[a][:] = WALL_CHAR
-            continue
-        for b in range(0, height):
-            
+        arm_list_a = arm.getArmPos()
 
-    pass
+        if(isArmWithinWindow(arm_list_a , window)):
+            maze[a][:] = WALL_CHAR
+            continue
+        elif(doesArmTouchObjects([first_arm], obstacles)):
+            maze[a][:] = WALL_CHAR
+            continue
+        elif(doesArmTouchObjects([first_arm], goals, isGoal=True)):
+            maze[a][:] = WALL_CHAR
+            continue
+
+        for b in range(0, height):
+            real_b = idxToAngle([b], [beta_limit[0]], granularity)[0]
+            arm.setArmAngle((real_a, real_b))
+            arm_list = arm.getArmPos()
+            whole_arm = arm.getArmPosDist()
+            if(not isArmWithinWindow(arm_list, window)):
+                maze[a][b] = WALL_CHAR
+            elif(doesArmTouchObjects(whole_arm, obstacles)):
+                maze[a][b] = WALL_CHAR
+            elif(doesArmTouchObjects(whole_arm, goals, isGoal=True)):
+                if(doesArmTipTouchGoals(arm_list[1][1])):
+                    maze[a][b] = OBJECTIVE_CHAR
+                else:
+                    maze[a][b] = WALL_CHAR
+
+    start_a = angleToIdx(start[0], alpha_limit[0], granularity)
+    start_b = angleToIdx(start[1], beta_limit[0], granularity)
+    maze[start_a][start_b] = START_CHAR
+    offset = [alpha_limit[0], beta_limit[0]]
+
+    ret = Maze(maze, offset, granularity)
