@@ -19,6 +19,7 @@ files and classes when code is run, so be careful to not modify anything else.
 # searchMethod is the search method specified by --method flag (bfs,dfs,astar,astar_multi,fast)
 
 import queue
+import heapq
 
 def search(maze, searchMethod):
     return {
@@ -126,36 +127,41 @@ def astar_corner(maze):
                 temp.append(edge_list[ind])
 
         position = coord
+
         while(temp):
             dist = 0
+            flag = 1
+
             for e in temp:
-                d = abs(e[0]-position[0]) + abs(e[1]-position[1])
-                if(d <= dist or dist == 0):
+                d = abs(e[0] - position[0]) + abs(e[1] - position[1])
+                if(d < dist or flag == 1):
+                    flag = 0
                     dist = d
                     rem = e
-                    position = e
+            position = rem
             heuristic += dist
             temp.remove(rem)
+
         return heuristic
+
+
 
     done = {}
     frontier_q = queue.PriorityQueue()
 
     edges = maze.getObjectives()
     start = maze.getStart()
-    #put the start node into the queue and set all targets to not visited
-    frontier_q.put((0,0, (start, (1,1,1,1))))
     #initialize prev state of start as start
     h = f_heuristic(start, (1,1,1,1), edges)
-    done[(start,(1,1,1,1))] = (h,0, (start, (1,1,1,1)))
+    frontier_q.put((0,0, (start, (1,1,1,1))))
+    done[(start,(1,1,1,1))] = (0,0, (start, (1,1,1,1)))
 
     while(frontier_q.empty() == False):
         current = frontier_q.get()
-        print(current)
         b_flag = 0
         tuples = list(current[2][1])
         if(tuples[0] == 0 and tuples[1] == 0 and tuples[2] == 0 and tuples[3] == 0):
-            ret_cur = (current[2])
+            ret_cur = current[2]
             b_flag = 1
             break
 
@@ -165,15 +171,10 @@ def astar_corner(maze):
             cur_tuples = tuples.copy()
             if(i in edges):
                 # print(i)
-                if cur_tuples[edges.index(i)]==0:
-                    print('Found edge again')
                 cur_tuples[edges.index(i)] = 0
-                print('cur_tuples')
-                print(cur_tuples)
 
             #check if i(neighbor) was already visited with the current flags
             if((i,tuple(cur_tuples)) not in done):
-
                 h = f_heuristic(i, cur_tuples, edges)
                 #set the f and g values and push the reamining states as well as the locations of the point
                 f_distance = h + current[1] + 1
@@ -194,7 +195,8 @@ def astar_corner(maze):
     return ret
 
 def astar_multi(maze):
-    def astar_helper(start, goal):
+
+    def astar_helper(maze, start, goal):
         done = {}
         frontier_q = queue.PriorityQueue()
 
@@ -231,7 +233,158 @@ def astar_multi(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
-    return []
+    class nodeMST:
+        def __init__(self):
+
+            self.neighbors = list()
+            heapq.heapify(self.neighbors)
+            self.coord = (-1,-1)
+
+        def __init__(self, coord_i):
+            self.neighbors = list()
+            heapq.heapify(self.neighbors)
+            self.coord = coord_i
+            return
+
+    class MSTree:
+
+        def __init__(self):
+            self.nodes = []
+            self.calculated_dist = {}
+            return
+        def createNodes(self, objectives):
+            for i in objectives:
+                self.nodes.append(nodeMST(i))
+            return
+
+        def setDistances(self, maze):
+            for node in self.nodes:
+                for i in self.nodes:
+                    if(node != i):
+                        heapq.heappush(node.neighbors, tuple(((astar_helper(maze, node.coord, i.coord)), i.coord, i)))
+            return
+
+        def getNode(self, coord):
+            for i in self.nodes:
+                if(node.coor == coord):
+                    return node
+            return nodeMST()
+
+        def calculateMST(self, objectivesLeft):
+            if(objectivesLeft in self.calculated_dist):
+                return self.calculated_dist[objectivesLeft]
+
+            current_obj = []
+            for i in self.nodes:
+                if(i.coord in objectivesLeft):
+                    print(i.coord)
+                    current_obj.append(i)
+
+            if(len(current_obj) == 1):
+                return 0
+
+            visited = []
+            visited.append(current_obj[0])
+            path_length = 0
+
+            # print(visited)
+            # print(current_obj)
+
+            while(1):
+                flag = 1
+                prev_dist = 0
+                for i in visited:
+                    for ind in range(0,len(i.neighbors)):
+                        if(i.neighbors[ind][2] in current_obj and (flag or (i.neighbors[ind][0] < prev_dist)) and i.neighbors[ind][2] not in visited):
+                            flag = 0
+                            prev_dist = i.neighbors[ind][0]
+                            next_add = i.neighbors[ind][2]
+                            break
+                visited.append(next_add)
+                path_length += prev_dist
+                if(len(visited) == len(current_obj)):
+                    break
+
+            self.calculated_dist[objectivesLeft] = path_length
+            return path_length
+
+    def f_heuristic(coord, obj_tuple, MSTree):
+        heuristic = 0
+        temp =[]
+        for ind in range(0,len(obj_tuple)):
+            if obj_tuple[ind] != (-1,-1):
+                temp.append(obj_tuple[ind])
+
+        flag = 1
+        dist = 0
+        for i in temp:
+            d = abs(coord[0]-i[0]) + abs(coord[1]-i[1])
+            if(flag or d < dist):
+                flag = 0
+                dist = d
+
+        return MSTree.calculateMST(obj_tuple) + dist
+
+    def done_check(obj_tuple):
+        ret = True
+        for i in obj_tuple:
+            if(i != (-1,-1)):
+                ret = False
+        return ret
+
+    done = {}
+    frontier_q = queue.PriorityQueue()
+
+    edges = maze.getObjectives()
+    start = maze.getStart()
+    obj_tuple = tuple(edges)
+    #init the MST
+    mstTree = MSTree()
+    mstTree.createNodes(obj_tuple)
+    mstTree.setDistances(maze)
+
+
+    #initialize prev state of start as start
+    frontier_q.put((0,0, (start, obj_tuple)))
+    done[(start, obj_tuple)] = (0,0, (start, obj_tuple))
+
+    while(frontier_q.empty() == False):
+        current = frontier_q.get()
+        b_flag = 0
+        tuples = list(current[2][1])
+        if(done_check(tuples)):
+            ret_cur = current[2]
+            b_flag = 1
+            break
+
+        neighbors = maze.getNeighbors(current[2][0][0], current[2][0][1])
+        for i in neighbors:
+            #if the neighbor is a target mark that target as visited before pushing the flags to the queue
+            cur_tuples = tuples.copy()
+            if(i in edges):
+                # print(i)
+                cur_tuples[cur_tuples.index(i)] = (-1,-1)
+
+            #check if i(neighbor) was already visited with the current flags
+            if((i,tuple(cur_tuples)) not in done):
+                h = f_heuristic(i, cur_tuples, mstTree)
+                #set the f and g values and push the reamining states as well as the locations of the point
+                f_distance = h + current[1] + 1
+                frontier_q.put((f_distance, current[1] + 1, (i, tuple(cur_tuples))))
+                #push the prev node into the done table
+                done[(i, tuple(cur_tuples))] = current
+
+
+    if(not b_flag):
+        ret_cur = (start,obj_tuple)
+
+    ret = []
+    while(ret_cur != (start, obj_tuple)):
+        ret.insert(0,ret_cur[0])
+        ret_cur = done[ret_cur][2]
+
+    ret.insert(0,start)
+    return ret
 
 
 def fast(maze):

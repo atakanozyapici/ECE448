@@ -46,13 +46,11 @@ def doesArmTouchObjects(armPosDist, objects, isGoal=False):
     for arm in armPosDist:
         for obj in objects:
             if(isGoal):
-                radius = obj[2] + arm[2]
-            else:
                 radius = obj[2]
+            else:
+                radius = obj[2] + arm[2]
             if(armIntersects(arm[0], arm[1], obj, radius)):
-                print('True')
                 return True
-    print('False')
     return False
 
 def doesArmTipTouchGoals(armEnd, goals):
@@ -83,8 +81,8 @@ def isArmWithinWindow(armPos, window):
         Return:
             True if all parts are in the window. False if not.
     """
-    for arm in ArmPos:
-        if(start[0] >= 0 and start[0] < window[0] and start[1] >= 0 and start[1] < window[1]):
+    for arm in armPos:
+        if(arm[0][0] >= 0 and arm[0][0] < window[0] and arm[0][1] >= 0 and arm[0][1] < window[1] and arm[1][0] >= 0 and arm[1][0] < window[0] and arm[1][1] >= 0 and arm[1][1] < window[1]):
             continue
         else:
             return False
@@ -95,15 +93,16 @@ def armIntersects(start, end, obj_position, radius):
     s_o = [obj_position[0] - start[0], obj_position[1] - start[1]]
     s_e = [end[0] - start[0], end[1] - start[1]]
     e_o = [obj_position[0] - end[0], obj_position[1] - end[1]]
+    e_s = [start[0] - end[0], start[1] - end[1]]
 
 
-    SE_SO = s_o[0] * s_e[0] + s_o[1] * s_e[1]
-    SE_EO = s_o[0] * e_o[0] + s_o[1] * e_o[1]
+    ES_SO = s_o[0] * e_s[0] + s_o[1] * e_s[1]
+    SE_EO = s_e[0] * e_o[0] + s_e[1] * e_o[1]
 
     distance = 0
     if(SE_EO > 0):
         distance = math.sqrt((end[0]-obj_position[0])**2 + (end[1]-obj_position[1])**2)
-    elif(SE_EO < 0):
+    elif(ES_SO > 0):
         distance = math.sqrt((start[0]-obj_position[0])**2 + (start[1]-obj_position[1])**2)
     else:
         distance = abs(s_e[0] * s_o[1] - s_e[1] * s_o[0]) / math.sqrt(s_e[1]**2 + s_e[0]**2)
