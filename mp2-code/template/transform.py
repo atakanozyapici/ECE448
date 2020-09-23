@@ -43,14 +43,14 @@ def transformToMaze(arm, goals, obstacles, window, granularity):
     beta_limit = limit[1]
     width = int((alpha_limit[1] - alpha_limit[0]) / granularity + 1)
     height = int((beta_limit[1] - beta_limit[0]) / granularity + 1)
-    maze = [SPACE_CHAR*width]*height
+    maze = np.array([[SPACE_CHAR for i in range(height)]for j in range(width)])
     for a in range(0, width):
         real_a = idxToAngle([a],[alpha_limit[0]], granularity)[0]
-        arm.setArmAngle((real_a, 0))
+        arm.setArmAngle((real_a, beta_limit[0]))
         first_arm = arm.getArmPosDist()[0]
-        arm_list_a = arm.getArmPos()
+        arm_list_a = arm.getArmPos()[0]
 
-        if(isArmWithinWindow(arm_list_a , window)):
+        if(not isArmWithinWindow([arm_list_a] , window)):
             maze[a][:] = WALL_CHAR
             continue
         elif(doesArmTouchObjects([first_arm], obstacles)):
@@ -70,14 +70,15 @@ def transformToMaze(arm, goals, obstacles, window, granularity):
             elif(doesArmTouchObjects(whole_arm, obstacles)):
                 maze[a][b] = WALL_CHAR
             elif(doesArmTouchObjects(whole_arm, goals, isGoal=True)):
-                if(doesArmTipTouchGoals(arm_list[1][1])):
+                if(doesArmTipTouchGoals(arm_list[1][1], goals)):
                     maze[a][b] = OBJECTIVE_CHAR
                 else:
                     maze[a][b] = WALL_CHAR
 
-    start_a = angleToIdx(start[0], alpha_limit[0], granularity)
-    start_b = angleToIdx(start[1], beta_limit[0], granularity)
+    start_a = angleToIdx([start[0]], [alpha_limit[0]], granularity)[0]
+    start_b = angleToIdx([start[1]], [beta_limit[0]], granularity)[0]
     maze[start_a][start_b] = START_CHAR
     offset = [alpha_limit[0], beta_limit[0]]
 
     ret = Maze(maze, offset, granularity)
+    return ret

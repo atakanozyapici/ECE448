@@ -82,7 +82,7 @@ def isArmWithinWindow(armPos, window):
             True if all parts are in the window. False if not.
     """
     for arm in armPos:
-        if(arm[0][0] >= 0 and arm[0][0] < window[0] and arm[0][1] >= 0 and arm[0][1] < window[1] and arm[1][0] >= 0 and arm[1][0] < window[0] and arm[1][1] >= 0 and arm[1][1] < window[1]):
+        if(arm[0][0] >= 0 and arm[0][0] <= window[0] and arm[0][1] >= 0 and arm[0][1] <= window[1] and arm[1][0] >= 0 and arm[1][0] <= window[0] and arm[1][1] >= 0 and arm[1][1] <= window[1]):
             continue
         else:
             return False

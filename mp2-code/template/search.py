@@ -20,6 +20,7 @@ This file contains search functions.
 
 from collections import deque
 from heapq import heappop, heappush
+import queue
 
 def search(maze, searchMethod):
     return {
@@ -30,6 +31,34 @@ def bfs(maze):
     # Write your code here
     """
     This function returns optimal path in a list, which contains start and objective.
-    If no path found, return None. 
+    If no path found, return None.
     """
-    return []
+    visited = {} #dictionary
+    q = queue.Queue()
+    start = maze.getStart()
+    q.put(start)
+    visited[start] = start
+
+    while(q.empty() == False):
+        current = q.get()
+        neighbors = maze.getNeighbors(current[0], current[1])
+        for i in neighbors:
+            b_flag = 0
+            if(maze.isObjective(i[0], i[1]) == True):
+                visited[i] = current
+                current = i
+                b_flag = 1
+                break
+            if(i not in visited):
+                q.put(i)
+                visited[i] = current
+        if(b_flag):
+            break
+    if(not b_flag):
+        return None
+    ret = []
+    while (current != start):
+        ret.insert(0,current)
+        current = visited[current]
+    ret.insert(0,start)
+    return ret
