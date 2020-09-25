@@ -41,10 +41,10 @@ def bfs(maze):
 
     while(q.empty() == False):
         current = q.get()
-        neighbors = maze.getNeighbors(current[0], current[1])
+        neighbors = maze.getNeighbors(current[0], current[1], current[2])
         for i in neighbors:
             b_flag = 0
-            if(maze.isObjective(i[0], i[1]) == True):
+            if(maze.isObjective(i[0], i[1], i[2]) == True):
                 visited[i] = current
                 current = i
                 b_flag = 1
