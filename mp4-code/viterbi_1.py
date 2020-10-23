@@ -55,7 +55,7 @@ def viterbi_1(train, test):
     output: list of sentences with tags on the words
             E.g., [[(word1, tag1), (word2, tag2)], [(word3, tag3), (word4, tag4)]]
     '''
-    alpha = 0.000001
+    alpha = 0.00001
 
     transition_dict = {}
     emission_dict = {}
