@@ -33,16 +33,58 @@ return - a list containing predicted labels for dev_set
 
 import numpy as np
 
+def classifyKNN(train_set, train_labels, dev_set, k):
+    # TODO: Write your code here
+    ret = []
+    for image in dev_set:
+        k_nn = {}
+        for ind in range(len(train_set)):
+            image_t = train_set[ind]
+            label_t = train_labels[ind]
+            diff = image - image_t
+            res = np.sqrt(np.sum(np.square(diff)))
+            if(len(k_nn) != k):
+                k_nn[res] = label_t
+            else:
+                if(max(k_nn) > res):
+                    k_nn.pop(max(k_nn))
+                    k_nn[res] = label_t
+        if(sum(k_nn.values()) > k/2):
+            ret.append(1)
+        else:
+            ret.append(0)
+    return ret
+
 def trainPerceptron(train_set, train_labels, learning_rate, max_iter):
     # TODO: Write your code here
     # return the trained weight and bias parameters
-    return W, b
+    w = np.zeros(train_set.shape[1])
+    alpha = learning_rate
+    b = 0
+
+    for i in range(max_iter):
+        for ind in range(len(train_set)):
+            image = train_set[ind]
+            y = train_labels[ind]
+            if(np.dot(image,w) + b > 0):
+                y_hat = 1
+            else:
+                y_hat = 0
+            error = y - y_hat
+            w = w + alpha * error * image
+            b = b + alpha * error
+    return w, b
 
 def classifyPerceptron(train_set, train_labels, dev_set, learning_rate, max_iter):
     # TODO: Write your code here
     # Train perceptron model and return predicted labels of development set
-    return []
+    ret = []
+    w, b = trainPerceptron(train_set, train_labels, learning_rate, max_iter)
+    for image in dev_set:
+        if(np.dot(image, w) + b > 0):
+            res = 1
+        else:
+            res = 0
+        ret.append(res)
 
-def classifyKNN(train_set, train_labels, dev_set, k):
-    # TODO: Write your code here
-    return []
+    return ret
