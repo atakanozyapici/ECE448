@@ -29,12 +29,26 @@ class NeuralNet(torch.nn.Module):
         @param in_size: Dimension of input
         @param out_size: Dimension of output
 
+        For Part 1 the network should have the following architecture (in terms of hidden units):
 
-
+        in_size -> 32 ->  out_size
+        We recommend setting the lrate to 0.01 for part 1
 
         """
         super(NeuralNet, self).__init__()
         self.loss_fn = loss_fn
+        self.classifier = nn.Sequential(
+            nn.Linear(in_size, 512),
+            nn.ReLU(inplace = True),
+            nn.Linear(512,256),
+            nn.ReLU(inplace = True),
+            nn.Linear(256,32),
+            nn.ReLU(inplace = True),
+            nn.Linear(32, out_size)
+        )
+        self.lrate = lrate
+
+
 
 
     def forward(self, x):
@@ -44,17 +58,58 @@ class NeuralNet(torch.nn.Module):
 
         @return y: an (N, out_size) torch tensor of output from the network
         """
-        return torch.ones(x.shape[0], 1)
+        return self.classifier(x)
 
-    def step(self, x,y):
+    def step(self, x, y):
         """
         Performs one gradient step through a batch of data x with labels y
         @param x: an (N, in_size) torch tensor
         @param y: an (N,) torch tensor
         @return L: total empirical risk (mean of losses) at this time step as a float
         """
-        return 0.0
 
+
+        ###
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(self.parameters(), lr=self.lrate, momentum=1)
+        # running_loss = 0.0
+        # print(x.size())
+        # optimizer.zero_grad()
+        output = self.forward(x)
+        # print(y)
+        loss = self.loss_fn(output, y)
+        loss.backward()
+        optimizer.step()
+        # print(output)
+        # running_loss += loss.item()
+        #
+        #
+        # for i in range(len(x)):
+        #     data = x[i]
+        #     label = y[i:i+1]
+        #     # print(data)
+        #     # print(label)
+        #
+        #     optimizer.zero_grad()
+        #
+        #     # input = torch.randn(3, 5, requires_grad=True)
+        #     # print(input)
+        #     # target = torch.empty(3, dtype=torch.long).random_(5)
+        #     # print(target)
+        #     # loss = self.loss_fn(input, target)
+        #     # print(loss)
+        #
+        #     print(data.size())
+        #     output = self.forward(data)
+        #     print(output)
+        #     print(label)
+        #     loss = self.loss_fn(output, label)
+        #     loss.backward()
+        #     optimizer.step()
+        #     running_loss += loss.item()
+        # print(loss.detach().cpu().numpy())
+        # print(loss)
+        return loss.item()
 
 
 def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
@@ -74,8 +129,30 @@ def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
     @return net: A NeuralNet object
 
     # NOTE: This must work for arbitrary M and N
-
-    model's performance could be sensitive to the choice of learning_rate. We recommend trying different values in case
-    your first choice does not seem to work well.
     """
-    return [],[],None
+    # find out how to get in_size, out_size
+    net = NeuralNet(0.001, nn.CrossEntropyLoss(), train_set.size()[1], 2)
+    loss_array = np.zeros(n_iter)
+    means = train_set.mean(dim=1, keepdim=True)
+    stds = train_set.std(dim=1, keepdim=True)
+    train_set = (train_set - means) / stds
+    for i in range(n_iter):
+        # print(i)
+        ind = (i*batch_size) % train_set.size()[0]
+        loss_array[i] = net.step(train_set[ind: ind+batch_size],train_labels[ind: ind+batch_size])
+
+    yhats = np.zeros(len(dev_set))
+    means = dev_set.mean(dim=1, keepdim=True)
+    stds = dev_set.std(dim=1, keepdim=True)
+    dev_set = (dev_set - means) / stds
+    for ind in range(len(dev_set)):
+        # print(dev_set[i])
+        temp_val = net(dev_set[ind])
+
+        if(temp_val[1] >= temp_val[0]):
+            val = 1
+        else:
+            val = 0
+        yhats[ind] =val
+
+    return loss_array,yhats,net
