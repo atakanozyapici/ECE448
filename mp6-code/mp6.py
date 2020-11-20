@@ -45,7 +45,6 @@ def main(args):
     train_labels = torch.tensor(train_labels,dtype=torch.int64)
     dev_set = torch.tensor(dev_set,dtype=torch.float32)
     _,predicted_labels,net = p.fit(train_set,train_labels, dev_set,args.max_iter)
-    print(dev_labels)
     accuracy,f1,precision,recall = compute_accuracies(predicted_labels,dev_set,dev_labels)
     print("Accuracy:",accuracy)
     print("F1-Score:",f1)
