@@ -41,7 +41,11 @@ class NeuralNet(torch.nn.Module):
         super(NeuralNet, self).__init__()
         self.loss_fn = loss_fn
         self.classifier = nn.Sequential(
-            nn.Linear(in_size, 32),
+            nn.Linear(in_size, 512),
+            nn.ReLU(inplace = True),
+            nn.Linear(512,256),
+            nn.ReLU(inplace = True),
+            nn.Linear(256,32),
             nn.ReLU(inplace = True),
             nn.Linear(32, out_size)
         )
@@ -70,11 +74,12 @@ class NeuralNet(torch.nn.Module):
 
         ###
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(self.parameters(), lr=self.lrate, momentum=0.9)
+        optimizer = optim.SGD(self.parameters(), lr=self.lrate, momentum=1)
         # running_loss = 0.0
         # print(x.size())
-        optimizer.zero_grad()
+        # optimizer.zero_grad()
         output = self.forward(x)
+        # print(y)
         loss = self.loss_fn(output, y)
         loss.backward()
         optimizer.step()
@@ -106,7 +111,8 @@ class NeuralNet(torch.nn.Module):
         #     optimizer.step()
         #     running_loss += loss.item()
         # print(loss.detach().cpu().numpy())
-        return loss.detach().cpu().numpy()
+        # print(loss)
+        return loss.item()
 
 
 def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
@@ -130,13 +136,18 @@ def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
     # find out how to get in_size, out_size
     net = NeuralNet(0.001, nn.CrossEntropyLoss(), train_set.size()[1], 2)
     loss_array = np.zeros(n_iter)
+    means = train_set.mean(dim=1, keepdim=True)
+    stds = train_set.std(dim=1, keepdim=True)
+    train_set = (train_set - means) / stds
     for i in range(n_iter):
         # print(i)
-        if(i*batch_size >= train_set.size()[0]):
-            break
-        loss_array[i] = net.step(train_set[i*batch_size: (i+1)*batch_size],train_labels[i*batch_size: (i+1)*batch_size])
+        ind = (i*batch_size) % train_set.size()[0]
+        loss_array[i] = net.step(train_set[ind: ind+batch_size],train_labels[ind: ind+batch_size])
 
     yhats = np.zeros(len(dev_set))
+    means = dev_set.mean(dim=1, keepdim=True)
+    stds = dev_set.std(dim=1, keepdim=True)
+    dev_set = (dev_set - means) / stds
     for ind in range(len(dev_set)):
         # print(dev_set[i])
         temp_val = net(dev_set[ind])
