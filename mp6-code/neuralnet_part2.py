@@ -14,6 +14,8 @@ files and classes when code is run, so be careful to not modify anything else.
 
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.optim as optim
 
 
 class NeuralNet(torch.nn.Module):
@@ -37,15 +39,28 @@ class NeuralNet(torch.nn.Module):
         """
         super(NeuralNet, self).__init__()
         self.loss_fn = loss_fn
-        self.classifier = nn.Sequential(
-            nn.Linear(in_size, 512),
+        # self.conv1 = nn.Conv2d(3, 6, 5)
+        # self.pool = nn.MaxPool2d(2, 2)
+        # self.conv2 = nn.Conv2d(6, 16, 5)
+        # self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        # self.fc2 = nn.Linear(120, 84)
+        # self.fc3 = nn.Linear(84, 10)
+        self.features = nn.Sequential(
+            nn.Conv2d(3,6,5),
             nn.ReLU(inplace = True),
-            nn.Linear(512,256),
+            nn.MaxPool2d(2,2),
+            nn.Conv2d(6,16,5),
             nn.ReLU(inplace = True),
-            nn.Linear(256,32),
-            nn.ReLU(inplace = True),
-            nn.Linear(32, out_size)
+            nn.MaxPool2d(2,2)
         )
+        self.classifier = nn.Sequential(
+            nn.Linear(16 * 5 * 5, 120),
+            nn.ReLU(inplace = True),
+            nn.Linear(120, 84),
+            nn.ReLU(inplace = True),
+            nn.Linear(84, 2)
+        )
+
         self.lrate = lrate
 
 
@@ -58,7 +73,11 @@ class NeuralNet(torch.nn.Module):
 
         @return y: an (N, out_size) torch tensor of output from the network
         """
-        return self.classifier(x)
+        x = x.view(-1,3,32,32)
+        x = self.features(x)
+        x = x.view(-1, 16 * 5 * 5)     
+        x = self.classifier(x)
+        return x
 
     def step(self, x, y):
         """
