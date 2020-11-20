@@ -72,7 +72,7 @@ class NeuralNet(torch.nn.Module):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(self.parameters(), lr=self.lrate, momentum=0.9)
         # running_loss = 0.0
-
+        # print(x.size())
         optimizer.zero_grad()
         output = self.forward(x)
         loss = self.loss_fn(output, y)
@@ -105,7 +105,7 @@ class NeuralNet(torch.nn.Module):
         #     loss.backward()
         #     optimizer.step()
         #     running_loss += loss.item()
-        print(loss.detach().cpu().numpy())
+        # print(loss.detach().cpu().numpy())
         return loss.detach().cpu().numpy()
 
 
@@ -132,11 +132,19 @@ def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
     loss_array = np.zeros(n_iter)
     for i in range(n_iter):
         # print(i)
+        if(i*batch_size >= train_set.size()[0]):
+            break
         loss_array[i] = net.step(train_set[i*batch_size: (i+1)*batch_size],train_labels[i*batch_size: (i+1)*batch_size])
 
-    yhats = np.zeros(dev_set.size()[0])
+    yhats = np.zeros(len(dev_set))
     for ind in range(len(dev_set)):
         # print(dev_set[i])
-        yhats[i] = net(dev_set[i])
+        temp_val = net(dev_set[ind])
+
+        if(temp_val[1] >= temp_val[0]):
+            val = 1
+        else:
+            val = 0
+        yhats[ind] =val
 
     return loss_array,yhats,net
