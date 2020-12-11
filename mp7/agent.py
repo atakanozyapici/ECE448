@@ -140,11 +140,13 @@ class Agent:
 
         '''
 
+
         # print(transform(state))
         state_T = transform(state)
         wall_x_bar, wall_y_bar = get_wall(state_T[0], state_T[1])
         food_dir_x_bar, food_dir_y_bar = get_food_dir(state_T[0], state_T[1], state_T[3], state_T[4])
         adj_top_bar, adj_bot_bar, adj_left_bar, adj_right_bar = get_body_states(state_T[2], state_T[0], state_T[1])
+
         if(self._train):
             if(self.s != None and self.a != None):
                 wall_x, wall_y = get_wall(self.s[0], self.s[1])
@@ -163,7 +165,7 @@ class Agent:
 
                 alpha = self.C/(self.C + self.N[wall_x, wall_y, food_dir_x, food_dir_y, adj_top, adj_bot, adj_left, adj_right, self.a])
                 q = self.Q[wall_x, wall_y, food_dir_x, food_dir_y, adj_top, adj_bot, adj_left, adj_right, self.a]
-
+                # print((wall_x, wall_y, food_dir_x, food_dir_y, adj_top, adj_bot, adj_left, adj_right))
                 a_bar = -1
                 max = 0
 
@@ -187,8 +189,6 @@ class Agent:
                 if(not dead):
                     #update n table
                     self.N[wall_x_bar, wall_y_bar, food_dir_x_bar, food_dir_y_bar, adj_top_bar, adj_bot_bar, adj_left_bar, adj_right_bar, ret_action] += 1
-                elif dead:
-                    self.reset()
             else:
                 ret_action = explore_step(self.N,self.Q, state_T, self.Ne)
                 self.N[wall_x_bar, wall_y_bar, food_dir_x_bar, food_dir_y_bar, adj_top_bar, adj_bot_bar, adj_left_bar, adj_right_bar, ret_action] += 1
@@ -208,6 +208,9 @@ class Agent:
                         a = i
             ret_action = a
 
-        self.s = state_T
-        self.a = ret_action
+        if(dead):
+            self.reset()
+        else:
+            self.s = state_T
+            self.a = ret_action
         return ret_action
